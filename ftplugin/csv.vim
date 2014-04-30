@@ -1,5 +1,5 @@
 " Filetype plugin for editing CSV files.
-" Version 2011-11-02 from http://vim.wikia.com/wiki/csv
+" Version 2014-04-30 from http://vim.wikia.com/wiki/csv
 if v:version < 700 || exists('b:did_ftplugin')
   finish
 endif
@@ -17,6 +17,26 @@ function! s:Warn(msg)
   echohl NONE
 endfunction
 
+" --- Highlighting a column {{{
+" Highlight a column in csv text.
+" :Csv 1    " highlight first column
+" :Csv 12   " highlight twelfth column
+" :Csv 0    " switch off highlight
+function! CSVH(colnr)
+  if a:colnr > 1
+    let n = a:colnr - 1
+    execute 'match Keyword /^\([^,]*,\)\{'.n.'}\zs[^,]*/'
+    execute 'normal! 0'.n.'f,'
+  elseif a:colnr == 1
+    match Keyword /^[^,]*/
+    normal! 0
+  else
+    match
+  endif
+endfunction
+command! -nargs=1 Csv :call CSVH(<args>)
+
+"}}}
 " Set or show column delimiter.
 " Accept '\t' (2 characters: backslash, t) as the tab character.
 function! s:Delimiter(delim)
@@ -215,9 +235,10 @@ endfunction
 
 " Wrapping would distort the column-based layout.
 " Lines must not be broken when typed.
-setlocal nowrap textwidth=0
+setlocal nowrap textwidth=0 wrapmargin=0
+
 " Undo the stuff we changed.
-let b:undo_ftplugin = "setlocal wrap< textwidth<"
+let b:undo_ftplugin = "setlocal wrap< textwidth< wrapmargin<"
     \ . "|if exists('*matchdelete')|call matchdelete(b:csv_match)|else|2match none|endif"
     \ . "|sil! exe 'nunmap <buffer> H'"
     \ . "|sil! exe 'nunmap <buffer> L'"
@@ -298,7 +319,7 @@ function! s:SortColumn(bang, range_given, line1, line2, ...) range
     let first = b:csv_heading_line_number + 1
     let last = line('$')
   endif
- 
+
   let flags = join(args)
   if flags == 'f'
     let b:csv_sort_ascending = empty(a:bang)
@@ -310,7 +331,7 @@ function! s:SortColumn(bang, range_given, line1, line2, ...) range
   endif
 endfunction
 command! -bang -buffer -nargs=* -range=0 Sort call s:SortColumn('<bang>', <count>, <line1>, <line2>, <f-args>)
- 
+
 " Copy an entire column into a register.
 " Column number can be omitted (default is the current column).
 " Register is a-z, or A-Z (append), or omitted for the unnamed register.
@@ -378,7 +399,7 @@ function! s:SearchColumn(args)
 endfunction
 " Use :SC n=string<CR> to search for string in the n-th column
 command! -buffer -nargs=1 SC execute s:SearchColumn('<args>')|normal! n
- 
+
 nnoremap <silent> <buffer> H :call <SID>HighlightPrevColumn()<CR>
 nnoremap <silent> <buffer> L :call <SID>HighlightNextColumn()<CR>
 nnoremap <silent> <buffer> J <Down>:call <SID>Focus_Column(b:csv_column)<CR>
