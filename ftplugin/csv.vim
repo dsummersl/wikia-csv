@@ -1,22 +1,23 @@
 " Filetype plugin for editing CSV files.
-" Version 2014-04-30 from http://vim.wikia.com/wiki/csv
+" Version 2015-05-11 from http://vim.wikia.com/wiki/csv
+
 if v:version < 700 || exists('b:did_ftplugin')
   finish
 endif
 let b:did_ftplugin = 1
-
+ 
 " Return number of characters (not bytes) in string.
 function! s:CharLen(str)
   return strlen(substitute(a:str, '.', 'x', 'g'))
 endfunction
-
+ 
 " Display a warning message.
 function! s:Warn(msg)
   echohl WarningMsg
   echo a:msg
   echohl NONE
 endfunction
-
+ 
 " --- Highlighting a column {{{
 " Highlight a column in csv text.
 " :Csv 1    " highlight first column
@@ -35,7 +36,7 @@ function! CSVH(colnr)
   endif
 endfunction
 command! -nargs=1 Csv :call CSVH(<args>)
-
+ 
 "}}}
 " Set or show column delimiter.
 " Accept '\t' (2 characters: backslash, t) as the tab character.
@@ -54,7 +55,7 @@ function! s:Delimiter(delim)
   echo printf('Delimiter = "%s"', b:csv_delimiter == "\t" ? '\t' : strtrans(b:csv_delimiter))
 endfunction
 command! -buffer -nargs=? Delimiter call s:Delimiter('<args>')
-
+ 
 " Get string containing delimiter (default ',') specified for current buffer.
 " A command like ':let g:csv_delimiter = ";"' changes the default.
 " Script assumes 'magic' option is in effect, so some special processing
@@ -112,7 +113,7 @@ function! s:GetStr(id)
   endif
   return b:csv_str[a:id]
 endfunction
-
+ 
 " Get the number of columns
 " Optionally takes one parameter, a specified line number
 function! s:GetNumCols(...)
@@ -125,7 +126,7 @@ function! s:GetNumCols(...)
   else
       let rg_cols_to_check = [1, 2, 3, line('$')-2, line('$')-1, line('$')]
   endif
-
+ 
   for l in rg_cols_to_check
     " Determine number of columns by counting the (unescaped) delimiters.
     " Note: The regexp may also return unbalanced ", so filter out anything
@@ -141,7 +142,7 @@ function! s:GetNumCols(...)
   endif
   return b:csv_max_col
 endfunction
-
+ 
 " Return regex to find the n-th column.
 function! s:GetExpr(colnr, ...)
   if a:0 == 0  " field only
@@ -155,10 +156,10 @@ function! s:GetExpr(colnr, ...)
     return '^' . field
   endif
 endfunction
-
+ 
 " Default column header line is the first line
 let b:csv_heading_line_number=1
-
+ 
 " Extract and echo the column header on the status line.
 function! s:PrintColumnInfo(colnr)
   let colHeading = substitute(matchstr(getline(b:csv_heading_line_number), s:GetExpr(a:colnr)),
@@ -174,7 +175,7 @@ function! s:PrintColumnInfo(colnr)
     echohl NONE
   endif
 endfunction
-
+ 
 " Change csv_heading_line_number to specified line.
 " If no line is specified, use the current line.
 function! s:SetHeadinglineNumber(linenr)
@@ -190,7 +191,7 @@ function! s:SetHeadinglineNumber(linenr)
   call s:GetNumCols(b:csv_heading_line_number)
 endfunction
 command! -buffer -nargs=? HL call s:SetHeadinglineNumber('<args>')
-
+ 
 " Highlight n-th column (if n > 0).
 " Remove previous highlight match (ignore error if none).
 " matchadd() priority -1 means 'hlsearch' will override the match.
@@ -209,14 +210,14 @@ function! s:Highlight(colnr)
     call s:Focus_Column(a:colnr)
   endif
 endfunction
-
+ 
 " Focus the cursor on the n-th column of the current line.
 function! s:Focus_Column(colnr)
   normal! 0
   call search(s:GetExpr(a:colnr), '', line('.'))
   call s:PrintColumnInfo(a:colnr)
 endfunction
-
+ 
 " Highlight next column.
 function! s:HighlightNextColumn()
   if b:csv_column < b:csv_max_col
@@ -224,7 +225,7 @@ function! s:HighlightNextColumn()
   endif
   call s:Highlight(b:csv_column)
 endfunction
-
+ 
 " Highlight previous column.
 function! s:HighlightPrevColumn()
   if b:csv_column > 1
@@ -232,13 +233,12 @@ function! s:HighlightPrevColumn()
   endif
   call s:Highlight(b:csv_column)
 endfunction
-
+ 
 " Wrapping would distort the column-based layout.
 " Lines must not be broken when typed.
-setlocal nowrap textwidth=0 wrapmargin=0
-
+setlocal nowrap textwidth=0
 " Undo the stuff we changed.
-let b:undo_ftplugin = "setlocal wrap< textwidth< wrapmargin<"
+let b:undo_ftplugin = "setlocal wrap< textwidth<"
     \ . "|if exists('*matchdelete')|call matchdelete(b:csv_match)|else|2match none|endif"
     \ . "|sil! exe 'nunmap <buffer> H'"
     \ . "|sil! exe 'nunmap <buffer> L'"
@@ -251,7 +251,7 @@ let b:undo_ftplugin = "setlocal wrap< textwidth< wrapmargin<"
     \ . "|sil exe 'augroup csv' . bufnr('')"
     \ . "|sil exe 'au!'"
     \ . "|sil exe 'augroup END'"
-
+ 
 let b:changed_done = -1
 " Highlight the first column, but not if reloading or resetting filetype.
 if !exists('b:csv_column')
@@ -260,7 +260,7 @@ endif
 " Following highlights column and calls GetNumCols() if set filetype manually
 " (BufEnter will also do it if filetype is set during load).
 silent call s:Highlight(b:csv_column)
-
+ 
 " Return Float value of field in line selected by regex, or the String field.
 function! s:GetValue(line, regex)
   let field = matchstr(a:line, a:regex)
@@ -270,7 +270,7 @@ function! s:GetValue(line, regex)
   endif
   return val
 endfunction
-
+ 
 " Compare lines based on the floating point values in the specified column.
 " This uses string compare 'ignorecase' option if neither field is a float.
 function! s:CompareLines(line1, line2)
@@ -283,7 +283,7 @@ function! s:CompareLines(line1, line2)
   let ascending = val1 > val2 ? 1 : val1 < val2 ? -1 : 0
   return b:csv_sort_ascending ? ascending : -ascending
 endfunction
-
+ 
 " Sort the n-th column, the highlighted one by default.
 " If range_given is non-zero we use line1 and line2,
 " otherwise they are ignored.  Range_given is given the
@@ -299,14 +299,14 @@ function! s:SortColumn(bang, range_given, line1, line2, ...) range
   if colnr < 1 || colnr > b:csv_max_col
     call s:Warn('Column number out of range')
   endif
-
+ 
   "First check that the headings line is a valid line
   if b:csv_heading_line_number >= line('$')
     call s:Warn('No lines to sort - specified heading line ['.b:csv_heading_line_number.
       \ '] is at or beyond end of file')
     return 1
   endif
-
+ 
   "Work out the first line to start sorting at.
   "If they explicitly passed a range, use it
   "else use from line after heading line to $
@@ -319,7 +319,7 @@ function! s:SortColumn(bang, range_given, line1, line2, ...) range
     let first = b:csv_heading_line_number + 1
     let last = line('$')
   endif
-
+ 
   let flags = join(args)
   if flags == 'f'
     let b:csv_sort_ascending = empty(a:bang)
@@ -331,7 +331,7 @@ function! s:SortColumn(bang, range_given, line1, line2, ...) range
   endif
 endfunction
 command! -bang -buffer -nargs=* -range=0 Sort call s:SortColumn('<bang>', <count>, <line1>, <line2>, <f-args>)
-
+ 
 " Copy an entire column into a register.
 " Column number can be omitted (default is the current column).
 " Register is a-z, or A-Z (append), or omitted for the unnamed register.
@@ -356,7 +356,7 @@ function! s:CopyColumn(args)
   execute 'let @'.reg.' = join(cells, "\n")."\n"'
 endfunction
 command! -buffer -nargs=* CC call s:CopyColumn('<args>')
-
+ 
 " Delete the n-th column, the highlighted one by default.
 function! s:DeleteColumn(colnr)
   if empty(a:colnr)
@@ -377,7 +377,7 @@ function! s:DeleteColumn(colnr)
   endif
 endfunction
 command! -buffer -nargs=? DC call s:DeleteColumn('<args>')
-
+ 
 " Search the n-th column. Argument in n=regex form where n is the column
 " number, and regex is the expression to use. If "n=" is omitted, then
 " use the current highlighted column.
@@ -399,7 +399,7 @@ function! s:SearchColumn(args)
 endfunction
 " Use :SC n=string<CR> to search for string in the n-th column
 command! -buffer -nargs=1 SC execute s:SearchColumn('<args>')|normal! n
-
+ 
 nnoremap <silent> <buffer> H :call <SID>HighlightPrevColumn()<CR>
 nnoremap <silent> <buffer> L :call <SID>HighlightNextColumn()<CR>
 nnoremap <silent> <buffer> J <Down>:call <SID>Focus_Column(b:csv_column)<CR>
@@ -413,7 +413,7 @@ nnoremap <silent> <buffer> $ :let b:csv_column=b:csv_max_col<CR>:call <SID>Highl
 nnoremap <silent> <buffer> gm :call <SID>Focus_Column(b:csv_column)<CR>
 nnoremap <silent> <buffer> <LocalLeader>J J
 nnoremap <silent> <buffer> <LocalLeader>K K
-
+ 
 " The column highlighting is window-local, not buffer-local, so it can persist
 " even when the filetype is undone or the buffer changed.
 execute 'augroup csv' . bufnr('')
